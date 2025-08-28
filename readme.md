@@ -2,7 +2,7 @@
 
 > Pronounced like "kiln"
 
-Ciln is a build system written in and for C.
+Ciln is a single-header build system written in and for C.
 
 ## Installation
 
@@ -11,18 +11,22 @@ Ciln is a build system written in and for C.
 git clone https://github.com/emmathemartian/ciln
 cd ciln
 
-# Build the Ciln executable and library, which compile and execute your build.c
-cc -ociln ./main.c
-cc -olibciln.so -fPIC -shared ./ciln.c
+# Build the Ciln executable, which compiles and executes your build.c.
+cc -ociln -I. ./main.c
 
-# For installation, you have two options. You can either symlink the library and
-# executable to /usr/local/lib/ and /usr/local/bin/ respectively, or you can
-# directly copy them. To symlink, use:
-sudo ./ciln symlink
+# Now build build.c. We do this manually since ciln.h isn't global yet.
+mkdir -p .ciln/
+cc -o.ciln/build -I. ./build.c
+
+# For installation, you have two options. You can either symlink the library
+# and executable to /usr/local/include/ and /usr/local/bin/ respectively, or
+# you can directly copy them. To symlink, use:
+sudo ./.ciln/build symlink
 # and to copy:
-sudo ./ciln install
-# Symlinking allows you to update Ciln by `git pull`ing and rebuilding, i.e, you
-# can maintain an up-to-date and from-source distribution of Ciln easily.
+# sudo ./.ciln/build install # TODO: IMPLEMENT
+# Symlinking allows you to update Ciln by `git pull`ing and rebuilding, i.e,
+# you can maintain an up-to-date and from-source distribution of Ciln without
+# needing to re-install.
 ```
 
 ## Usage
@@ -43,7 +47,7 @@ ciln
 
 # In the event that you need to build a Ciln build.c without the `ciln` tool,
 # you can simply:
-cc -o.ciln/build -lciln build.c
+cc -o.ciln/build build.c
 ```
 
 ### With the DSL
@@ -51,11 +55,13 @@ cc -o.ciln/build -lciln build.c
 Ciln provides a set of macros designed to abstract away a lot of the C-ness from
 your build.c, making it feel more like a build script than C.
 
-Generally this is what I recommend using, as it removes a _lot_ of boilerplate
+Generally this is what I recommend using, as it removes much of the boilerplate
 without straying _too_ far from C (for the most part, at least).
 
 ```c
 /* Sample build.c */
+#define CILN_DSL 1
+#define CILN_IMPL 1
 #include <ciln.h>
 
 /* Create a task called `build` which compiles main.c */
@@ -87,10 +93,10 @@ task(test)
 }
 
 /* `buildscript` is a shorthand for `int main(int argc, const char *argv[])`,
-   feel free to completely forego it if you prefer. */
+   feel free to completely forgo it if you prefer. */
 buildscript
 {
-	/* `bake` creates and runs a build context, the provided arguments is a
+	/* `bake` creates and runs a build context, the provided arguments are a
 	   list of tasks to add. */
 	bake(build, test);
 }
@@ -100,6 +106,7 @@ buildscript
 
 ```c
 /* Sample build.c */
+#define CILN_IMPL 1
 #include <ciln.h>
 
 struct ciln_res _build(struct ciln *ciln, struct ciln_task *task, int depth)

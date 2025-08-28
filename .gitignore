@@ -1,4 +1,5 @@
+# Ignore the ciln caches
 /.ciln/
 
-/libciln.so
+# Ignore the ciln executable
 /ciln
